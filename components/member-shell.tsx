@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarDays, ClipboardList, Home, ReceiptText } from "lucide-react";
+import { LogoutButton } from "@/components/logout-button";
 
 const tabs = [
   { href: "/member", label: "ホーム", icon: Home },
@@ -16,6 +17,9 @@ export function MemberShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="mobile-shell">
+      <div className="member-shell-actions">
+        <LogoutButton className="button ghost member-logout" />
+      </div>
       {children}
       <nav className="bottom-tabs" aria-label="メンバーナビゲーション">
         {tabs.map((tab) => {

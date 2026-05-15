@@ -22,6 +22,7 @@ export const assignments = [
     breakMinutes: 60,
     dailyRate: 12000,
     memo: "入口前で集合。担当者に到着連絡。",
+    detailText: "auイベント A店\n集合：9:40\n稼働：10:00-18:00\n場所：https://maps.google.com/?q=新宿駅\n担当：〇〇さん\n備考：入口前集合",
     expenseStatus: "unsubmitted" as ExpenseStatus,
     expenseAmount: 0
   },
@@ -37,6 +38,7 @@ export const assignments = [
     breakMinutes: 60,
     dailyRate: 13000,
     memo: "バックヤードで朝礼あり。",
+    detailText: "docomoイベント △△店\n集合：9:40\n稼働：10:00-18:00\n場所：https://maps.google.com/?q=横浜駅\n備考：バックヤードで朝礼あり",
     expenseStatus: "submitted" as ExpenseStatus,
     expenseAmount: 1800
   },
@@ -52,6 +54,7 @@ export const assignments = [
     breakMinutes: 60,
     dailyRate: 12000,
     memo: "スタッフ証を忘れないこと。",
+    detailText: "SoftBankイベント □□店\n集合：9:40\n稼働：10:00-18:00\n場所：https://maps.google.com/?q=大宮駅\n備考：スタッフ証を忘れないこと",
     expenseStatus: "approved" as ExpenseStatus,
     expenseAmount: 1400
   }

@@ -1,23 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Save } from "lucide-react";
-import { operatingShiftDays } from "@/lib/mock-data";
+import { MonthNav } from "@/components/month-nav";
+import { dateFromMonthDay, monthEnd, monthLabel, monthStart, normalizeMonth, operatingDaysForMonth } from "@/lib/month";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Availability = "yes" | "no";
 type SaveStatus = "idle" | "loading" | "saved" | "error" | "demo";
 
-const targetYear = 2026;
-const targetMonth = 6;
-
 export default function MemberShiftsPage() {
+  return (
+    <Suspense fallback={<p className="muted">読み込み中...</p>}>
+      <MemberShiftsContent />
+    </Suspense>
+  );
+}
+
+function MemberShiftsContent() {
   const supabase = createSupabaseBrowserClient();
+  const searchParams = useSearchParams();
+  const targetMonth = normalizeMonth(searchParams.get("month"));
+  const operatingDays = useMemo(() => operatingDaysForMonth(targetMonth), [targetMonth]);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [values, setValues] = useState<Record<number, Availability>>({});
   const [status, setStatus] = useState<SaveStatus>(supabase ? "loading" : "demo");
   const [message, setMessage] = useState("");
-  const unanswered = useMemo(() => operatingShiftDays.filter((day) => !values[day.day]).length, [values]);
+  const unanswered = useMemo(() => operatingDays.filter((day) => !values[day.day]).length, [operatingDays, values]);
+  const yesCount = useMemo(() => operatingDays.filter((day) => values[day.day] === "yes").length, [operatingDays, values]);
   const isSubmitted = unanswered === 0 && Object.keys(values).length > 0;
 
   useEffect(() => {
@@ -53,29 +64,23 @@ export default function MemberShiftsPage() {
         return;
       }
 
-      const startDate = `${targetYear}-${String(targetMonth).padStart(2, "0")}-01`;
-      const endDate = `${targetYear}-${String(targetMonth).padStart(2, "0")}-30`;
       const { data: rows, error: shiftError } = await client
         .from("shift_availabilities")
         .select("work_date,availability")
         .eq("member_id", member.id)
-        .gte("work_date", startDate)
-        .lte("work_date", endDate);
+        .gte("work_date", monthStart(targetMonth))
+        .lte("work_date", monthEnd(targetMonth));
 
       if (!active) return;
 
       if (shiftError) {
         setStatus("error");
-        setMessage("シフトの取得に失敗しました。");
+        setMessage(`シフトの取得に失敗しました: ${shiftError.message}`);
         return;
       }
 
       setMemberId(member.id);
-      setValues(
-        Object.fromEntries(
-          (rows ?? []).map((row) => [Number(String(row.work_date).slice(-2)), row.availability as Availability])
-        )
-      );
+      setValues(Object.fromEntries((rows ?? []).map((row) => [Number(String(row.work_date).slice(-2)), row.availability as Availability])));
       setStatus("idle");
       setMessage("");
     }
@@ -85,14 +90,14 @@ export default function MemberShiftsPage() {
     return () => {
       active = false;
     };
-  }, [supabase]);
+  }, [supabase, targetMonth]);
 
   function setAll(value: Availability) {
-    setValues(Object.fromEntries(operatingShiftDays.map((day) => [day.day, value])));
+    setValues(Object.fromEntries(operatingDays.map((day) => [day.day, value])));
   }
 
   function setWeekendsYes() {
-    setValues(Object.fromEntries(operatingShiftDays.map((day) => [day.day, "yes"])));
+    setValues(Object.fromEntries(operatingDays.map((day) => [day.day, "yes"])));
   }
 
   async function saveShift() {
@@ -100,14 +105,14 @@ export default function MemberShiftsPage() {
 
     if (!supabase || !memberId) {
       setStatus("demo");
-      setMessage("デモ入力を保存した状態にしました。Supabase接続後はDBへ保存されます。");
+      setMessage("デモ入力を保存済みにしました。Supabase接続後はDBへ保存されます。");
       return;
     }
 
     setStatus("loading");
-    const rows = operatingShiftDays.map((day) => ({
+    const rows = operatingDays.map((day) => ({
       member_id: memberId,
-      work_date: `${targetYear}-${String(targetMonth).padStart(2, "0")}-${String(day.day).padStart(2, "0")}`,
+      work_date: dateFromMonthDay(targetMonth, day.day),
       availability: values[day.day],
       submitted_at: new Date().toISOString()
     }));
@@ -118,7 +123,7 @@ export default function MemberShiftsPage() {
 
     if (error) {
       setStatus("error");
-      setMessage("シフトの保存に失敗しました。");
+      setMessage(`シフトの保存に失敗しました: ${error.message}`);
       return;
     }
 
@@ -130,37 +135,40 @@ export default function MemberShiftsPage() {
     <>
       <div className="page-head">
         <div>
-          <p className="eyebrow">{targetYear}年{targetMonth}月 / 土日祝のみ</p>
+          <p className="eyebrow">{monthLabel(targetMonth)} / 土日祝のみ</p>
           <h1>シフト提出</h1>
         </div>
-        <span className={`badge ${isSubmitted ? "ok" : "warn"}`}>{isSubmitted ? "保存済み" : "未提出"}</span>
+        <MonthNav basePath="/member/shifts" month={targetMonth} />
       </div>
+      <span className={`badge ${isSubmitted ? "ok" : "warn"}`}>{isSubmitted ? "保存済み" : "未提出"}</span>
 
-      <section className="card stack">
-        <div className="row">
+      <section className="card member-shift-summary" style={{ marginTop: 14 }}>
+        <div className="member-metric-grid">
+          <div className="metric"><span className="muted">YES</span><strong>{yesCount}日</strong></div>
+          <div className="metric"><span className="muted">未回答</span><strong>{unanswered}日</strong></div>
+        </div>
+        <div className="member-action-row">
           <button className="button secondary" onClick={setWeekendsYes}>すべてYES</button>
           <button className="button ghost" onClick={() => setAll("no")}>全日NO</button>
         </div>
-        <p className="muted">稼働対象の土日祝だけを入力してください。平日は表示しません。</p>
-        <div className="list">
-          {operatingShiftDays.map((day) => (
-            <div key={day.day} className="shift-row">
-              <span className={day.weekend ? "weekend" : ""}>{day.label}</span>
+      </section>
+
+      <section className="card stack">
+        <div className="member-shift-list">
+          {operatingDays.map((day) => (
+            <div key={day.day} className="member-shift-row">
+              <div>
+                <strong className={day.weekend ? "weekend" : ""}>{day.label}</strong>
+                <span>{values[day.day] ? "回答済み" : "未回答"}</span>
+              </div>
               <div className="segmented">
-                <button
-                  className={`segment ${values[day.day] === "yes" ? "active" : ""}`}
-                  onClick={() => setValues((current) => ({ ...current, [day.day]: "yes" }))}
-                >
+                <button className={`segment ${values[day.day] === "yes" ? "active" : ""}`} onClick={() => setValues((current) => ({ ...current, [day.day]: "yes" }))}>
                   YES
                 </button>
-                <button
-                  className={`segment ${values[day.day] === "no" ? "active" : ""}`}
-                  onClick={() => setValues((current) => ({ ...current, [day.day]: "no" }))}
-                >
+                <button className={`segment ${values[day.day] === "no" ? "active" : ""}`} onClick={() => setValues((current) => ({ ...current, [day.day]: "no" }))}>
                   NO
                 </button>
               </div>
-              {!values[day.day] && <span className="badge">未回答</span>}
             </div>
           ))}
         </div>
@@ -168,7 +176,7 @@ export default function MemberShiftsPage() {
           <Save size={18} />
           {status === "loading" ? "保存中" : "保存する"}
         </button>
-        {unanswered > 0 && <p className="muted">未回答：{unanswered}日。表示されている土日祝すべてでYES/NOを選択してください。</p>}
+        {unanswered > 0 && <p className="muted">表示されている土日祝すべてでYES/NOを選択してください。</p>}
         {message && <p className={status === "error" ? "badge danger" : "muted"}>{message}</p>}
       </section>
     </>
