@@ -7,4 +7,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+dev-server.*.log
+start-server.*.log
 *.tsbuildinfo
