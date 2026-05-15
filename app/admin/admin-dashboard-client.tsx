@@ -32,11 +32,22 @@ const demoStats: DashboardStats = {
   pendingExpenses: adminStats.submittedExpenses
 };
 
+const emptyStats: DashboardStats = {
+  submittedMembers: 0,
+  totalMembers: 0,
+  unassignedProjects: 0,
+  submittedExpenses: 0,
+  paymentTotal: 0,
+  activeProjects: 0,
+  confirmedAssignments: 0,
+  pendingExpenses: 0
+};
+
 export function AdminDashboardClient() {
   const searchParams = useSearchParams();
   const targetMonth = normalizeMonth(searchParams.get("month"));
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const [stats, setStats] = useState<DashboardStats>(demoStats);
+  const [stats, setStats] = useState<DashboardStats>(() => supabase ? emptyStats : demoStats);
   const [status, setStatus] = useState<LoadStatus>(supabase ? "loading" : "demo");
   const [message, setMessage] = useState(
     supabase ? "Supabaseの月次状況を集計しています。" : "Supabase未接続のため、デモ集計を表示しています。"
