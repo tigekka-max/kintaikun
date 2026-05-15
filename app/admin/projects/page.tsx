@@ -7,6 +7,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type ProjectRow = {
   id: string;
+  workDate: string;
   date: string;
   title: string;
   storeName: string;
@@ -20,6 +21,7 @@ export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<ProjectRow[]>(
     mockProjects.map((project) => ({
       id: project.id,
+      workDate: "2026-06-01",
       date: project.date,
       title: project.title,
       storeName: project.storeName,
@@ -49,14 +51,36 @@ export default function AdminProjectsPage() {
         return;
       }
 
+      const projectIds = (data ?? []).map((project) => project.id);
+      const { data: assignments, error: assignmentsError } = projectIds.length > 0
+        ? await client
+            .from("assignments")
+            .select("project_id")
+            .in("project_id", projectIds)
+            .eq("status", "confirmed")
+        : { data: [], error: null };
+
+      if (!active) return;
+
+      if (assignmentsError) {
+        setMessage("割当人数の取得に失敗しました。ログイン権限を確認してください。");
+        return;
+      }
+
+      const assignedCountByProject = new Map<string, number>();
+      for (const assignment of assignments ?? []) {
+        assignedCountByProject.set(assignment.project_id, (assignedCountByProject.get(assignment.project_id) ?? 0) + 1);
+      }
+
       setProjects(
         (data ?? []).map((project) => ({
           id: project.id,
+          workDate: project.work_date,
           date: formatDate(project.work_date),
           title: project.title,
           storeName: project.store_name,
           requiredPeople: project.required_people,
-          assignedPeople: 0,
+          assignedPeople: assignedCountByProject.get(project.id) ?? 0,
           dailyRate: project.project_daily_rate ?? 0
         }))
       );
@@ -89,7 +113,7 @@ export default function AdminProjectsPage() {
                 <p className="muted">{project.storeName}</p>
                 <p>必要人数：{project.requiredPeople} / 割当済み：{project.assignedPeople}　案件日当：{yen(project.dailyRate)}</p>
               </div>
-              <Link className="button secondary" href="/admin/assignments">割当</Link>
+              <Link className="button secondary" href={`/admin/assignments?month=${project.workDate.slice(0, 7)}`}>割当</Link>
             </div>
           </section>
         ))}

@@ -17,9 +17,9 @@ export default function AdminDashboardPage() {
           <Link className="button secondary" href="/admin/shifts">シフトを見る</Link>
         </section>
         <section className="card metric">
-          <span className="muted">未割当案件</span>
+          <span className="muted">未割当シフト</span>
           <strong>{adminStats.unassignedProjects}件</strong>
-          <Link className="button secondary" href="/admin/projects">割当する</Link>
+          <Link className="button secondary" href="/admin/shifts">割当する</Link>
         </section>
         <section className="card metric">
           <span className="muted">交通費申請</span>

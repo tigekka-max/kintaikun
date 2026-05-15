@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BriefcaseBusiness, CalendarCheck, LayoutDashboard, ReceiptText, UserCheck, Users, WalletCards } from "lucide-react";
+import { CalendarCheck, LayoutDashboard, ReceiptText, Users, WalletCards } from "lucide-react";
+import { LogoutButton } from "@/components/logout-button";
 
 const nav = [
   { href: "/admin", label: "ダッシュボード", icon: LayoutDashboard },
   { href: "/admin/shifts", label: "シフト", icon: CalendarCheck },
-  { href: "/admin/projects", label: "案件", icon: BriefcaseBusiness },
-  { href: "/admin/assignments", label: "割当", icon: UserCheck },
   { href: "/admin/expenses", label: "交通費", icon: ReceiptText },
   { href: "/admin/settlements", label: "精算", icon: WalletCards },
   { href: "/admin/members", label: "メンバー", icon: Users }
@@ -33,6 +32,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+        <div className="sidebar-footer">
+          <LogoutButton className="button ghost sidebar-logout" />
+        </div>
       </aside>
       <main className="main">{children}</main>
     </div>

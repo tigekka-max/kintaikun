@@ -10,7 +10,10 @@ export default function AdminProjectNewPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "saved" | "error" | "demo">(supabase ? "idle" : "demo");
   const [message, setMessage] = useState(supabase ? "" : "Supabase未接続のため、保存操作はデモ扱いです。");
 
-  async function saveProject(formData: FormData) {
+  async function saveProject(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+
     if (!supabase) {
       setStatus("demo");
       setMessage("デモ保存しました。Supabase接続後はDBへ保存されます。");
@@ -18,7 +21,26 @@ export default function AdminProjectNewPage() {
     }
 
     setStatus("loading");
-    const { data: userData } = await supabase.auth.getUser();
+    setMessage("");
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      setStatus("error");
+      setMessage("ログイン状態を確認できません。管理者アカウントでログインし直してください。");
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role,status")
+      .eq("id", userData.user.id)
+      .single();
+
+    if (profileError || !profile || profile.role !== "admin" || profile.status !== "active") {
+      setStatus("error");
+      setMessage("このユーザーは有効な管理者として登録されていません。profiles の role/status を確認してください。");
+      return;
+    }
 
     const { error } = await supabase.from("projects").insert({
       work_date: String(formData.get("work_date")),
@@ -33,12 +55,12 @@ export default function AdminProjectNewPage() {
       break_minutes: Number(formData.get("break_minutes") || 60),
       memo: String(formData.get("memo") || ""),
       status: "active",
-      created_by: userData.user?.id ?? null
+      created_by: userData.user.id
     });
 
     if (error) {
       setStatus("error");
-      setMessage("案件の保存に失敗しました。管理者権限を確認してください。");
+      setMessage(`案件の保存に失敗しました: ${error.message}`);
       return;
     }
 
@@ -56,7 +78,7 @@ export default function AdminProjectNewPage() {
         </div>
       </div>
       <section className="card">
-        <form className="form" action={saveProject}>
+        <form className="form" onSubmit={saveProject}>
           <div className="grid two">
             <div className="field"><label>稼働日</label><input name="work_date" type="date" defaultValue="2026-06-08" required /></div>
             <div className="field"><label>案件名</label><input name="title" placeholder="auイベント" required /></div>
