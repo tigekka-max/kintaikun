@@ -23,30 +23,35 @@ export function LoginForm() {
       return;
     }
 
-    setStatus("loading");
-    setMessage("");
+    try {
+      setStatus("loading");
+      setMessage("");
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error || !data.user) {
+        setStatus("error");
+        setMessage(error?.message ?? "ログインに失敗しました。");
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role,status")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError || !profile || profile.status !== "active") {
+        await supabase.auth.signOut();
+        setStatus("error");
+        setMessage("有効なプロフィールが見つかりません。管理者に確認してください。");
+        return;
+      }
+
+      router.push(profile.role === "admin" ? "/admin" : "/member");
+    } catch (error) {
       setStatus("error");
-      setMessage(error?.message ?? "ログインに失敗しました。");
-      return;
+      setMessage(error instanceof Error ? error.message : "ログイン処理中にエラーが発生しました。");
     }
-
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("role,status")
-      .eq("id", data.user.id)
-      .single();
-
-    if (profileError || !profile || profile.status !== "active") {
-      await supabase.auth.signOut();
-      setStatus("error");
-      setMessage("有効なプロフィールが見つかりません。管理者に確認してください。");
-      return;
-    }
-
-    router.push(profile.role === "admin" ? "/admin" : "/member");
   }
 
   return (

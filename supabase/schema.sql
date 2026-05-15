@@ -70,6 +70,7 @@ create table public.assignments (
   project_id uuid not null references public.projects(id) on delete cascade,
   member_id uuid not null references public.members(id) on delete cascade,
   daily_rate integer not null check (daily_rate >= 0),
+  detail_text text,
   status text not null default 'draft' check (status in ('draft', 'confirmed', 'cancelled')),
   confirmed_at timestamptz,
   created_at timestamptz not null default now(),

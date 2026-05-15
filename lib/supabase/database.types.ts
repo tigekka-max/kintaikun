@@ -154,6 +154,80 @@ export type Database = {
         };
         Relationships: [];
       };
+      assignments: {
+        Row: {
+          id: string;
+          project_id: string;
+          member_id: string;
+          daily_rate: number;
+          detail_text: string | null;
+          status: "draft" | "confirmed" | "cancelled";
+          confirmed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          member_id: string;
+          daily_rate: number;
+          detail_text?: string | null;
+          status?: "draft" | "confirmed" | "cancelled";
+          confirmed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          project_id?: string;
+          member_id?: string;
+          daily_rate?: number;
+          detail_text?: string | null;
+          status?: "draft" | "confirmed" | "cancelled";
+          confirmed_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      transportation_expenses: {
+        Row: {
+          id: string;
+          assignment_id: string;
+          member_id: string;
+          amount: number;
+          route_memo: string | null;
+          status: "submitted" | "approved" | "rejected";
+          admin_comment: string | null;
+          submitted_at: string;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          assignment_id: string;
+          member_id: string;
+          amount: number;
+          route_memo?: string | null;
+          status?: "submitted" | "approved" | "rejected";
+          admin_comment?: string | null;
+          submitted_at?: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount?: number;
+          route_memo?: string | null;
+          status?: "submitted" | "approved" | "rejected";
+          admin_comment?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
